@@ -1,9 +1,9 @@
-# This is the code for a bot that summarizes a conversation during a time period 
+# This is the code for a bot that summarizes a conversation during a given time period 
 # used: huggingface, python, discord.py, os, datetime, time, re, json
-# implement a command which allows user to set their timezone. give appropriate 
-# message that they have to set their timezone if not in 'US/Central'.
+# implement a command which allows user to set their timezone. give
+# an appropriate message that they have to set their timezone if not
+# in 'US/Central'.
 
-# Maybe implement a database that stores the timezones of users.
 
 import os
 import discord
@@ -13,6 +13,7 @@ import pytz
 from pytz import timezone
 import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
+from typing import cast
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -51,7 +52,7 @@ async def fetch_messages(ctx, start_time: str, end_time: str, t_z= "US/Central")
             limit=300, oldest_first=True):
             
             if message.author != bot.user: #and message.startswith("/summary") == False:
-                # print(message.content)
+                print(message.content)
                 messages.append(f'{message.author.name}: {message.content}')
                 
         return messages
@@ -60,44 +61,39 @@ async def fetch_messages(ctx, start_time: str, end_time: str, t_z= "US/Central")
         print(f"Error fetching messages: {e}")
         raise
 
-def summarize_messages():
+def summarize_messages(messages):
 
     model_name = "t5-base"
     tokenizer = T5Tokenizer.from_pretrained(model_name, legacy = False)
     model = T5ForConditionalGeneration.from_pretrained(model_name)
 
-    # print(type(tokenizer))
-    # print(type(model))
+    print(type(tokenizer))
+    print(type(model))
     
-    convo = """
-    summarize: 
-    Person A: "Hello, my name is Ali Asghar."
-    Person B: "Hey, Ali. Nice to meet you. I am Ahmed. Where do you study?"
-    Person A: "I am studying at the University of Illinois Urbana Champaign."
-    Person B: "Awesome! I am studying at the Mansehra Institute of Technology."
-    """
-# "\n".join(messages)
 
-    input_text = convo
+    convo= "\n".join(messages)
+    print(convo)
+
+    input_text = "summarize: " + convo
     input_ids = tokenizer.encode(
         input_text, return_tensors="pt",
         max_length=512, truncation=True)
 
     summary_ids = model.generate(
-        input_ids, max_length=100, min_length=5,
-        length_penalty=1.0, num_beams=4, early_stopping=True)
+        input_ids, max_length=100, min_length=5)
+        # length_penalty=1.0, num_beams=4, early_stopping=True)
     
     summary = tokenizer.decode(
         summary_ids[0], skip_special_tokens=True)
     
     return summary
 
-summary = summarize_messages()
-print("Generated Summary:")
-print(summary)
+# summary = summarize_messages()
+# print("Generated Summary:\n", summary)
+# print(summary)
 
 
-Define a command
+# Define a command
 @bot.command()
 async def summary(ctx, start_time, end_time, t_z = "US/Central"):
     try:
@@ -111,15 +107,15 @@ async def summary(ctx, start_time, end_time, t_z = "US/Central"):
         await ctx.send(f"An error occurred: {e}")
     
     
-# @bot.event
-# async def on_message(message):
-#     if message.author == bot.user:
-#         return
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
 
-#     if message.content.startswith('!'):
-#         await message.channel.send('Gandu bache')
+    if message.content.startswith('!'):
+        await message.channel.send('Hi!')
 
-#     await bot.process_commands(message)
+    await bot.process_commands(message)
     
 try:
   token = os.getenv("TOKEN") or ""
